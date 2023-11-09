@@ -18,8 +18,8 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Connect to database
-con = sqlite3.connect("contrast.db", check_same_thread=False, autocommit=False)
-cur = con.cursor()
+#con = sqlite3.connect("contrast.db", autocommit=False)
+#cur = con.cursor()
 
 @app.after_request
 def after_request(response):
@@ -52,9 +52,14 @@ def login():
         # Ensure password was submitted
         elif not request.form.get("password"):
             return apology("must provide password", 403)
+        
+        # establish connection with database
+        con = sqlite3.connect("contrast.db", autocommit=False)
+        cur = con.cursor()
 
         # Query database for username
         rows = cur.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        con.close()
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
@@ -73,6 +78,10 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Register user"""
+    
+    #establish connection with database
+    con = sqlite3.connect("contrast.db", autocommit=False)
+    cur = con.cursor()
 
     # if user registered via POST (i.e. submitted the form)
     if request.method == "POST":
@@ -80,9 +89,6 @@ def register():
         # Ensure username was submitted
         if not request.form.get("username"):
             return apology("must provide username", 400)
-
-        elif (cur.execute("SELECT username FROM users WHERE username = ?", request.form.get("username"))):
-            return apology("Username already exists", 400)
 
         # Ensure password was submitted
         elif not request.form.get("password"):
@@ -94,6 +100,11 @@ def register():
 
         elif request.form.get("confirmation") != request.form.get("password"):
             return apology("Confirmation does not match password", 400)
+        
+        else:
+            result = cur.execute("SELECT username FROM users WHERE username = ?", (request.form.get("username"),))
+            if result.fetchone():
+                return apology("Username already exists", 400)        
 
         # generate password hash
         hash = generate_password_hash(request.form.get("password"))
@@ -101,8 +112,10 @@ def register():
         username = str(request.form.get("username"))
 
         # Insert values for username and password hash into database
-        cur.execute("INSERT INTO users (username, hash) VALUES (?, ?)", username, hash)
-        con.commit
+
+        cur.execute("INSERT INTO users (username, hash) VALUES (?, ?)", (username, hash))
+        con.commit()
+        con.close()
 
         return redirect("/")
 
