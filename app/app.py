@@ -48,11 +48,27 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 @login_required
 def orders():
     """Show current orders"""
+    # retrieve relevant details
+    
     return render_template("orders.html")
+
+@app.route("/companies", methods=["GET", "POST"])
+@login_required
+def companies():
+    """Show all companies on books"""
+
+    if request.method == "POST":
+        # process data
+        return
+    
+    
+
+
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -71,10 +87,6 @@ def login():
         # Ensure password was submitted
         elif not request.form.get("password"):
             return apology("must provide password", 403)
-        
-        # establish connection with database
-        # con = sqlite3.connect("contrast.db", autocommit=False)
-        # cur = con.cursor()
 
         # Query database for username
         rows = query_db("SELECT * FROM users WHERE username = ?", [request.form.get("username")], one=True )
