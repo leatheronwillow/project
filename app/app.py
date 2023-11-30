@@ -2,7 +2,7 @@ from flask import Flask, render_template, session, request, flash, redirect, g
 from flask_session import Session
 import sqlite3
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import login_required, apology
+from helpers import login_required, apology, rs
 
 # import relevant modules
 
@@ -65,7 +65,19 @@ def companies():
         # process data
         return
     
+    return
+
+@app.route("/", methods=["GET", "POST"])
+@login_required
+def orders():
+    """retrieve orders"""
+
     
+
+    # render template
+    return render_template("index.html", portfolio=portfolio, cash=cash, grand_total=grand_total)
+    
+
 
 
 
@@ -119,8 +131,9 @@ def logout():
     
     
     
-@app.route("/register", methods=["GET", "POST"])
-def register():
+@app.route("/add_company", methods=["GET", "POST"])
+@login_required
+def add_company():
     """Register user"""
     
     # #establish connection with database
@@ -187,9 +200,72 @@ def register():
             
             con.execute("INSERT INTO users VALUES (?, ?, ?)", [people_id, username, hash])
 
+        return redirect("/companies")
+
+    # user reached via GET
+    else:
+        people = query_db("SELECT * FROM people")
+
+        return render_template("add_company.html", people=people)
+    
+@app.route("/add_company", methods=["GET", "POST"])
+def add_companies():
+    """Register companies"""
+    
+    # #establish connection with database
+    # cur = get_db()
+
+    # if user registered via POST (i.e. submitted the form)
+    if request.method == "POST":
+
+        # Ensure company name was submitted
+        if not request.form.get("name"):
+            return apology("must provide company name", 400)
+
+        # Ensure category was submitted
+        elif not request.form.get("category"):
+            return apology("must provide category", 400)
+        
+        # Ensure company doesn't already exist in database
+        else:
+            result = query_db("SELECT name FROM companies WHERE name = ?", [request.form.get("name")], one=True)
+            if result:
+                return apology("Company already exists", 400)        
+
+        company_name = str(request.form.get("name"))
+
+        if request.form.get("contact") == "not-in-list":
+            contact_id = "Not Provided"
+        else:
+            contact_id = int(request.form.get("contact"))
+        
+        category = str(request.form.get("category"))
+
+        if request.form.get("mobile"):
+            mobile = str(request.form.get("mobile"))
+        else:
+            mobile = "not given"
+        
+        if request.form.get("email"):
+            email = str(request.form.get("email"))
+        else:
+            email = "not given"
+        
+        # Insert user details into people table
+        con = get_db()
+
+        with con:
+            con.execute("INSERT INTO people (first_name, last_name, mobile, email) VALUES (?, ?, ?, ?)", (first_name, last_name, mobile, email))
+            
+            # Insert values for username and password hash into database
+            result = con.execute("SELECT id FROM people WHERE first_name = ? AND last_name = ?", [first_name, last_name])
+            people_id = result.fetchone()["id"]
+            
+            con.execute("INSERT INTO users VALUES (?, ?, ?)", [people_id, username, hash])
+
         return redirect("/")
 
     # user reached via GET
     else:
-        return render_template("register.html")
+        return render_template("r.html")
 

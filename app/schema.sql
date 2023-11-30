@@ -159,3 +159,4 @@ CREATE TABLE invoices (
     status TEXT NOT NULL,
     date_paid NUMERIC
 );
+
